@@ -1,0 +1,32 @@
+# General
+.DS_Store
+Thumbs.db
+.metadata
+.recommenders
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Backups
+*_backup.md
+
+# IDE
+.vscode
+.idea
+
+# Privado
+Plan_Mes_01.md
+Plan_Mes_02.md
+Plan_Mes_03.md
+Plan_Fase_2.md
+Plan_Fase_3.md
+Plan_Fase_4.md  
+Recursos_Tecnicos.md
+Tracking_Accountability.md
+Ventas_y_Outreach.md    
+00_MASTER_PLAN.md   
+v1.md
