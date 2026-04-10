@@ -33,3 +33,8 @@ v1.md
 plan.md
 plan copy.md
 SISTEMAS/TRACKING/
+# Ignora todos los Word y sus archivos temporales
+*.docx
+*.doc
+~$*.docx
+~$*.doc
