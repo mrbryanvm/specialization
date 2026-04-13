@@ -9,11 +9,13 @@ def multiply(a, b):
     return a * b
 
 def divide(a, b):
+    if b == 0:
+        return "Error, cannot divide by zero"
     return a / b
 
 def calculator():
     while(True):
-        print("INTERACTIVE CALCULATOR")
+        print("=== INTERACTIVE CALCULATOR ===")
         print("1. Add")
         print("2. Subtract")
         print("3. Multiply")
@@ -21,6 +23,7 @@ def calculator():
         print("5. Exit")
 
         option = input("Choose an option (1-5); ")
+
         if option == "5":
             print("Goodbye")
             break
@@ -28,9 +31,13 @@ def calculator():
         if option not in ["1", "2", "3", "4"]:
             print("Invalid option, try again.")
             continue
-      
-        num1 = float(input("Enter first number: "))
-        num2 = float(input("Enter second number: "))
+
+        try:
+            num1 = float(input("Enter first number: "))
+            num2 = float(input("Enter second number: "))
+        except ValueError:
+            print("Error: please enter valid numbers.")
+            continue
 
         if option == "1":
             result = add(num1, num2)
