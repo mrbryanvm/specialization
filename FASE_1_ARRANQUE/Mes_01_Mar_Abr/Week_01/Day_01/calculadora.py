@@ -10,3 +10,10 @@ def multiplicar(a, b):
 
 def dividir(a, b):
     return a / b
+
+def calculadora():
+    print("INTERACTIVE CALCULATOR")
+    print("1. Add")
+    print("2. Substract")
+    print ("3. Multiply")
+    print("4. Divide")
