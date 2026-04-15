@@ -1,13 +1,13 @@
-#etiquetas = ["oferta", "comida", "bebida", "postre", "juguete", "hogar", "suntuoso", "refrigerado", "con_vencimiento"]
-producto = {
-    "nombre": "Leche",
-    "precio": 10.90,
-    "etiquetas": ["con_vencimiento", "bebida", "refrigerado"]
+#labels = ["sale", "food", "drink", "dessert", "toy", "home", "luxury", "refrigerated", "expiring"]
+product = {
+    "name": "Milk",
+    "price": 10.90,
+    "labels": ["expiring", "drink", "refrigerated"]
 }
 
-print(f"Producto seleccionado: {producto['nombre']}")
+print(f"Selected product: {product['name']}")
 
-producto['etiquetas'].append("deslactosado")
+product['labels'].append("lactose_free")
 
-print("\n---Detalle del producto---")
-print(producto)
+print("\n---Product details---")
+print(product)
