@@ -1,0 +1,7 @@
+# lista inicial con datos sucios
+prices = [15.50, 20.0, -8.0, -74, 27.7, -99.99, 100.0]
+# Filtrar valores positivos y sumarles 1
+valid_prices = [p + 1.0 for p in prices if p > 0]
+# Resultado
+print(f"Original prices: {prices}")
+print(f"Valid prices: {valid_prices}")
