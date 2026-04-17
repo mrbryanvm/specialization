@@ -26,5 +26,20 @@ with open('sales.csv', 'r') as file:
         total_revenue += (price * quantity)
 
 # Paso 7: Mostrar el resultado con formato
-print(f"--- REPORTE DE VENTAS ---")
-print(f"Total Revenue del día: ${total_revenue:,.2f}")
+print(f"--- SALES REPORT ---")
+print(f"Total Revenue: ${total_revenue:,.2f}")
+
+
+
+print(f"===\n\nSECOND TOTAL REVENUE REPORT===")
+total_revenue2 = 0.0
+with open('sales.csv', 'r') as file:
+    next(file)
+    for linee in file:
+        partss = linee.strip().split(',')
+        price2 = float(partss[2])
+        quantity2 = int(partss[3])
+        total_revenue2 += (price2 * quantity2)
+
+print(f"--- SALES REPORT ---:")
+print(f"Total renevue: ${total_revenue:,.2f}")
