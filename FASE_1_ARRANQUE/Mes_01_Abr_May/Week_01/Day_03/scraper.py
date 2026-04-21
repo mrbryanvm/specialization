@@ -34,13 +34,36 @@ class UserScraper:
             print(f"- {user['name']} ({user['email']})")
         print("----------------------\n")
 
+class UserScraper2:
+    def __init__(self):
+        self.base_url = "https://jsonplaceholder.typicode.com/users"
+    def fetch_users(self):
+        try:
+            response = requests.get(self.base_url)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Failed to fetch data. Status: {response.status_code}")
+                return []
+        except Exception as e:
+            print(f"An error occurred during fetch: {e}")
+            return []
+    def display_emails(self, users_list):
+        print("\n===USER DIRECTORY 2 ===")
+        for user in users_list:
+            print(f"- {user['name']} ({user['email']})")
+        print("************\n")
 if __name__ == "__main__":
     # 1. Instantiate the class
     scraper = UserScraper()
+    scraper2 = UserScraper2()
     
     # 2. Get the user data
     users = scraper.fetch_users()
+    users2 = scraper2.fetch_users()
     
     # 3. Display the formatted results
     if users:
         scraper.display_emails(users)
+    if users2:
+        scraper2.display_emails(users2)
