@@ -13,8 +13,6 @@ for fruta in frutas:
 
 # examples to practice
 # Counter app that count from 50 to 1 with interval of 5
-#  show in red the numbers multiples of 10
-#  show in blue the numbers multiples of 5
 counter = 50
 print("\nStarting countdown...")
 while(counter>=1):
