@@ -2,78 +2,91 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage, AIMessage
 
-# Load environment variables for API keys
+# Load environment variables from .env file (only works locally)
 load_dotenv()
+
+# --- PAGE SETUP ---
+st.set_page_config(page_title="BoImport Expert", page_icon="📦")
+st.title("📦 BoImport Logistics Assistant")
+st.write("Professional interface for tech hardware import logistics.")
+
 
 def initialize_session():
     """
-    Initializes the session state to prevent 'memory loss' during Streamlit reruns.
-    This pattern ensures the LLM and History are only instantiated once.
+    Initializes session state using modern LCEL architecture.
+    - 'messages': stores the full chat history for UI rendering AND as memory for the LLM.
+    - 'llm': the language model, stored once to avoid re-instantiation on every rerun.
     """
-    if "bot" not in st.session_state:
-        # Optimization: Define the model once and store it in session state
-        llm = ChatGroq(
-            temperature=0.2, 
-            model_name="llama-3.1-8b-instant", 
+    if "llm" not in st.session_state:
+        st.session_state.llm = ChatGroq(
+            temperature=0.2,
+            model_name="llama-3.1-8b-instant",
             api_key=os.getenv("GROQ_API_KEY")
         )
-        
-        # System Prompt: Strict persona for BoImport Expert
-        template = """
-        You are 'BoImport Expert', a specialized consultant for hardware importers.
-        Provide technical, practical, and direct advice regarding logistics and customs.
-        Keep answers under 6 lines. Use Markdown for clarity.
-        
-        Current conversation:
-        {history}
-        User: {input}
-        BoImport Expert:
-        """
-        prompt = PromptTemplate(input_variables=["history", "input"], template=template)
-        
-        # Storing the Chain in session_state preserves the ConversationBufferMemory
-        st.session_state.bot = ConversationChain(
-            llm=llm,
-            prompt=prompt,
-            memory=ConversationBufferMemory()
-        )
-        
-        # History for UI rendering
+
+    if "messages" not in st.session_state:
+        # This list acts as BOTH the visual chat history AND the LLM's memory.
+        # Each item is a LangChain message object (HumanMessage or AIMessage).
         st.session_state.messages = []
 
-def main():
-    st.set_page_config(page_title="BoImport Expert", page_icon="📦")
-    st.title("📦 BoImport Logistics Assistant")
-    st.write("Professional interface for tech hardware import logistics.")
 
-    initialize_session()
+def get_ai_response(user_input: str) -> str:
+    """
+    Builds the prompt chain and gets a response using the modern LCEL approach.
+    No ConversationChain, no deprecated classes.
+    """
+    # 1. Define the prompt structure with a system persona and chat history placeholder
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", """You are 'BoImport Expert', a specialized consultant for Bolivian 
+        entrepreneurs importing tech hardware from China.
+        Provide technical, practical, and direct advice about logistics and customs.
+        Keep answers under 6 lines. Use Markdown for clarity.
+        ONLY answer questions related to international trade, logistics, and hardware.
+        If asked about unrelated topics, politely decline and redirect to logistics."""),
+        MessagesPlaceholder(variable_name="history"),
+        ("human", "{input}")
+    ])
 
-    # --- RENDER CHAT HISTORY ---
-    # We iterate through the session list to redraw bubbles after every rerun
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+    # 2. Build the chain: prompt | llm (LCEL pipe syntax)
+    chain = prompt | st.session_state.llm
 
-    # --- CHAT INPUT LOGIC ---
-    if user_prompt := st.chat_input("Ask about shipping, taxes, or suppliers..."):
-        # Display user message
-        st.chat_message("user").markdown(user_prompt)
-        st.session_state.messages.append({"role": "user", "content": user_prompt})
-        
-        # Generate and display assistant response
-        with st.chat_message("assistant"):
-            with st.spinner("Processing logistics query..."):
-                try:
-                    response = st.session_state.bot.invoke({"input": user_prompt})
-                    ai_text = response["response"]
-                    st.markdown(ai_text)
-                    st.session_state.messages.append({"role": "assistant", "content": ai_text})
-                except Exception as e:
-                    st.error(f"System Error: {str(e)}")
+    # 3. Invoke the chain, passing the full message history as memory
+    response = chain.invoke({
+        "history": st.session_state.messages,
+        "input": user_input
+    })
 
-if __name__ == "__main__":
-    main()
+    return response.content
+
+
+# --- APP MAIN FLOW ---
+initialize_session()
+
+# Render existing chat history as bubbles
+for msg in st.session_state.messages:
+    role = "user" if isinstance(msg, HumanMessage) else "assistant"
+    with st.chat_message(role):
+        st.markdown(msg.content)
+
+# Handle new user input
+if user_prompt := st.chat_input("Ask about shipping, taxes, or suppliers..."):
+    # Show user message immediately
+    with st.chat_message("user"):
+        st.markdown(user_prompt)
+
+    # Get AI response with spinner
+    with st.chat_message("assistant"):
+        with st.spinner("Processing logistics query..."):
+            try:
+                ai_text = get_ai_response(user_prompt)
+                st.markdown(ai_text)
+            except Exception as e:
+                ai_text = f"System Error: {str(e)}"
+                st.error(ai_text)
+
+    # Save both messages to history AFTER displaying them
+    st.session_state.messages.append(HumanMessage(content=user_prompt))
+    st.session_state.messages.append(AIMessage(content=ai_text))
