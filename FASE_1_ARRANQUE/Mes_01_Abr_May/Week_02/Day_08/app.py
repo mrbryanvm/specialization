@@ -1,4 +1,4 @@
-import os
+# import os
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -24,8 +24,8 @@ def initialize_session():
     if "llm" not in st.session_state:
         st.session_state.llm = ChatGroq(
             temperature=0.2,
-            model_name="llama-3.1-8b-instant",
-            api_key=os.getenv("GROQ_API_KEY"),
+            model="llama-3.1-8b-instant",
+            # api_key=os.getenv("GROQ_API_KEY"),
         )
 
     if "messages" not in st.session_state:
