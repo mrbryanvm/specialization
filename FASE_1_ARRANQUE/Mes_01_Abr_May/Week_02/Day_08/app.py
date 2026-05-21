@@ -1,9 +1,10 @@
-import streamlit as st
 import os
+
+import streamlit as st
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_groq import ChatGroq
 
 # Load environment variables from .env file (only works locally)
 load_dotenv()
@@ -24,7 +25,7 @@ def initialize_session():
         st.session_state.llm = ChatGroq(
             temperature=0.2,
             model_name="llama-3.1-8b-instant",
-            api_key=os.getenv("GROQ_API_KEY")
+            api_key=os.getenv("GROQ_API_KEY"),
         )
 
     if "messages" not in st.session_state:
@@ -39,25 +40,27 @@ def get_ai_response(user_input: str) -> str:
     No ConversationChain, no deprecated classes.
     """
     # 1. Define the prompt structure with a system persona and chat history placeholder
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are 'BoImport Expert', a specialized consultant for Bolivian 
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """You are 'BoImport Expert', a specialized consultant for Bolivian
         entrepreneurs importing tech hardware from China.
         Provide technical, practical, and direct advice about logistics and customs.
         Keep answers under 6 lines. Use Markdown for clarity.
         ONLY answer questions related to international trade, logistics, and hardware.
-        If asked about unrelated topics, politely decline and redirect to logistics."""),
-        MessagesPlaceholder(variable_name="history"),
-        ("human", "{input}")
-    ])
+        If asked about unrelated topics, politely decline and redirect to logistics.""",
+            ),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{input}"),
+        ]
+    )
 
     # 2. Build the chain: prompt | llm (LCEL pipe syntax)
     chain = prompt | st.session_state.llm
 
     # 3. Invoke the chain, passing the full message history as memory
-    response = chain.invoke({
-        "history": st.session_state.messages,
-        "input": user_input
-    })
+    response = chain.invoke({"history": st.session_state.messages, "input": user_input})
 
     return response.content
 
