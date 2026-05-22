@@ -32,7 +32,7 @@ try:
 
     # 5. Send the WhatsApp message
     message = client.messages.create(
-        body="Hello Bryan! This message was sent automatically from my Python script. 🚀🐍",
+        body="Hello Bryan! This message was sent automatically from my Python script. 🐍",
         from_=twilio_number,
         to=user_number,
     )

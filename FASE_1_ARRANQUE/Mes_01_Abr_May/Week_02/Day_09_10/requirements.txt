@@ -1,2 +1,4 @@
 twilio
 python-dotenv
+fastapi
+uvicorn
