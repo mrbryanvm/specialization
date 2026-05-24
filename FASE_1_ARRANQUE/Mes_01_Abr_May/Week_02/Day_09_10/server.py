@@ -27,6 +27,14 @@ except Exception as e:
     print(f"❌ Error initializing Groq: {e}")
     llm = None
 
+# 2. Create the memory "warehouse"
+# This is a Python dictionary. Think of it like a filing cabinet:
+# - Each "drawer" is labeled with a phone number (e.g. "whatsapp:+59169512710")
+# - Inside each drawer is a LIST of messages (the full conversation history)
+# When a new user writes, we create a new drawer for them automatically.
+# When a known user writes again, we open their existing drawer and read their history.
+conversation_memory: dict[str, list] = {}
+
 
 @app.post("/webhook")
 async def whatsapp_webhook(request: Request):
