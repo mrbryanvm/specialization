@@ -1,9 +1,32 @@
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
 from twilio.twiml.messaging_response import MessagingResponse
 
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_groq import ChatGroq
+
+# 0. Load environment variables (this loads your GROQ_API_KEY from .env)
+load_dotenv()
+
 # Initialize the FastAPI application
 app = FastAPI(title="WhatsApp Webhook Server")
+
+# 1. Initialize the LLM (Large Language Model)
+# We do this OUTSIDE the webhook function so it only connects once when the server starts,
+# instead of creating a new connection every single time a message arrives.
+try:
+    llm = ChatGroq(
+        temperature=0.2,
+        model="llama-3.1-8b-instant",
+    )
+    print("✅ Groq LLM initialized successfully.")
+except Exception as e:
+    print(f"❌ Error initializing Groq: {e}")
+    llm = None
+
 
 @app.post("/webhook")
 async def whatsapp_webhook(request: Request):
