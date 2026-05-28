@@ -1,0 +1,7 @@
+twilio
+python-dotenv
+fastapi
+uvicorn
+langchain
+langchain-groq
+langchain-core
