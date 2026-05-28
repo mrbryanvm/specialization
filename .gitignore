@@ -45,3 +45,6 @@ SISTEMAS/TRACKING/
 
 # Notes
 Notes.md
+
+# ChromaDB local databases
+**/chroma_db/
