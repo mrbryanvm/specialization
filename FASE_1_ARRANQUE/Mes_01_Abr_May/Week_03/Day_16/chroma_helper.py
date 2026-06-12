@@ -34,6 +34,7 @@ from langchain_community.document_loaders import TextLoader
 from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pydantic import SecretStr
 
 load_dotenv()
 
@@ -97,7 +98,7 @@ def build_vector_database():
         print(f"   [{i+1}] {preview}...")
 
     # ── Step 3: Initialize the embedding model (via HuggingFace API) ──
-    print(f"\n🧠 Step 3: Connecting to HuggingFace Inference API...")
+    print("\n🧠 Step 3: Connecting to HuggingFace Inference API...")
     print(f"   Model: {EMBEDDING_MODEL}")
     print("   (No local download needed — computations run on HuggingFace servers)")
 
@@ -107,7 +108,7 @@ def build_vector_database():
         sys.exit(1)
 
     embeddings = HuggingFaceInferenceAPIEmbeddings(
-        api_key=HF_TOKEN,
+        api_key=SecretStr(HF_TOKEN),
         model_name=EMBEDDING_MODEL,
     )
 

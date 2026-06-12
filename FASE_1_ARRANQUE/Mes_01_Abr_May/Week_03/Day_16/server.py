@@ -39,7 +39,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_groq import ChatGroq
 from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 from twilio.rest import Client as TwilioClient
 from twilio.twiml.messaging_response import MessagingResponse
 
@@ -82,7 +82,7 @@ HF_TOKEN = os.getenv("HF_TOKEN", "")
 
 try:
     embeddings = HuggingFaceInferenceAPIEmbeddings(
-        api_key=HF_TOKEN,
+        api_key=SecretStr(HF_TOKEN),
         model_name=EMBEDDING_MODEL,
     )
 
