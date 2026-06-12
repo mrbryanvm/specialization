@@ -31,10 +31,10 @@ import sys
 
 from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
-from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings  # noqa: E501
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from pydantic import SecretStr
+#from pydantic import SecretStr
 
 
 load_dotenv()
@@ -108,9 +108,9 @@ def build_vector_database():
         print("   Get your free token at: https://huggingface.co/settings/tokens")
         sys.exit(1)
 
-    embeddings = HuggingFaceInferenceAPIEmbeddings(
-        api_key=SecretStr(HF_TOKEN),
-        model_name=EMBEDDING_MODEL,
+    embeddings = HuggingFaceEndpointEmbeddings(
+        huggingfacehub_api_token=HF_TOKEN,
+        model=EMBEDDING_MODEL,
     )
 
     print("   ✅ Connected to HuggingFace API successfully")
