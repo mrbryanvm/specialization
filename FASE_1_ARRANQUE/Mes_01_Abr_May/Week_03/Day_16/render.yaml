@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: muebleria-america-bot
+    runtime: python
+    # buildCommand runs ONCE before the server starts.
+    # We install dependencies AND rebuild the ChromaDB vector database.
+    # The chroma_db/ folder is NOT in GitHub (too heavy), so Render
+    # must reconstruct it from catalogo_muebles.txt during each deploy.
+    buildCommand: pip install -r requirements.txt && python chroma_helper.py
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    # sync: false means Render will ask you to type the value manually
+    # in their dashboard — it never stores them in GitHub (for security).
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_FROM
+        sync: false
+      - key: USER_NUMBER
+        sync: false
+      - key: MAKE_WEBHOOK_URL
+        sync: false
+      - key: MAKE_HANDOFF_WEBHOOK_URL
+        sync: false

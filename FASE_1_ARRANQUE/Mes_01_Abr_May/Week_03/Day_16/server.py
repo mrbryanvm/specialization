@@ -568,25 +568,30 @@ def get_ai_response(
     sender_number: str,
     user_input: str,
     background_tasks: BackgroundTasks | None = None,
-) -> str:
+) -> str | None:
     """
     The AI brain: RAG + Lead Scoring + CRM + Human Handoff detection.
 
     Day 16 adds:
-    - Pre-check: if handoff is active, bot is SILENT (returns handoff message)
+    - Pre-check: if handoff is active, check 'volver al bot' FIRST, then go silent
     - Post-check: detect handoff trigger keywords in user message
     - Post-check: detect if bot said "no tengo esa información" 3 times in a row
     - If handoff triggered: send escalation webhook and activate handoff mode
 
+    Returns:
+        str  → normal AI response (send to customer)
+        None → handoff is active, bot should be COMPLETELY SILENT (no message)
+
     Flow:
-    1. Check if handoff is already active → return handoff message if yes
-    2. Check customer message for handoff keywords
-    3. SEARCH the catalog for relevant info (RAG Retrieval)
-    4. BUILD the prompt with catalog context (RAG Augmentation)
-    5. GENERATE the AI response (LLM 1 — conversational)
-    6. Check if the AI response contains the "no info" phrase (auto-handoff trigger)
-    7. SCORE THE LEAD (LLM 2 — structured output)
-    8. SEND TO CRM (background task — Make.com webhook)
+    1. Check 'volver al bot' FIRST (even during handoff) → resume if yes
+    2. Check if handoff is active → return None (silence) if yes
+    3. Check customer message for handoff keywords
+    4. SEARCH the catalog for relevant info (RAG Retrieval)
+    5. BUILD the prompt with catalog context (RAG Augmentation)
+    6. GENERATE the AI response (LLM 1 — conversational)
+    7. Check if the AI response contains the "no info" phrase (auto-handoff trigger)
+    8. SCORE THE LEAD (LLM 2 — structured output)
+    9. SEND TO CRM (background task — Make.com webhook)
     """
     if llm is None:
         return (
@@ -594,13 +599,28 @@ def get_ai_response(
             "Por favor intenta de nuevo en unos minutos. 🙏"
         )
 
+    # ── STEP 0: CHECK 'volver al bot' FIRST — even during handoff ──
+    # This MUST come before the handoff block, otherwise the customer
+    # can never escape handoff mode (the bug we found in testing).
+    resume_phrases = ["volver al bot", "volver al asistente"]
+    if any(p in user_input.lower() for p in resume_phrases):
+        if handoff_active.get(sender_number, False):
+            handoff_active[sender_number] = False
+            no_info_count[sender_number] = 0
+            logger.info(f"✅ {sender_number} resumed bot conversation via message.")
+            return (
+                "¡Claro! Vuelvo a estar contigo. 😊 ¿En qué te puedo ayudar "
+                "con nuestro catálogo de muebles?"
+            )
+
     # ── PRE-CHECK: Is this conversation already handed off? ──
+    # If handoff is active, the bot is COMPLETELY SILENT.
+    # Returning None tells the webhook endpoint to send an empty TwiML
+    # response — the customer sees NO message from the bot at all.
+    # The owner is handling this conversation manually from the WhatsApp app.
     if handoff_active.get(sender_number, False):
-        logger.info(f"🤝 {sender_number} is in handoff mode — bot is silent.")
-        return (
-            "Tu conversación está siendo atendida por un especialista humano. "
-            "Si deseas volver al asistente virtual, escribe 'volver al bot'. 😊"
-        )
+        logger.info(f"🤝 {sender_number} is in handoff mode — bot is COMPLETELY SILENT.")
+        return None
 
     # Initialize memory for new users
     if sender_number not in conversation_memory:
@@ -612,18 +632,6 @@ def get_ai_response(
         logger.info(f"🆕 New conversation started with {sender_number}")
 
     user_history = conversation_memory[sender_number]
-
-    # ── CHECK: Does the customer WANT to resume bot after handoff? ──
-    resume_phrases = ["volver al bot", "volver al asistente", "bot", "asistente"]
-    if any(p in user_input.lower() for p in resume_phrases):
-        if handoff_active.get(sender_number, False):
-            handoff_active[sender_number] = False
-            no_info_count[sender_number] = 0
-            logger.info(f"✅ {sender_number} resumed bot conversation.")
-            return (
-                "¡Claro! Vuelvo a estar contigo. 😊 ¿En qué te puedo ayudar "
-                "con nuestro catálogo de muebles?"
-            )
 
     # ── HANDOFF CHECK: Did the customer ask for a human? ──
     if check_handoff_keywords(user_input):
@@ -886,7 +894,12 @@ def send_whatsapp_outbound(
 async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks):
     """
     Receives incoming WhatsApp messages from Twilio.
-    Same as Day 15 — unchanged, but now get_ai_response() handles handoff internally.
+
+    IMPORTANT (Day 16 fix):
+    If get_ai_response() returns None, it means handoff is active.
+    In that case, we return an EMPTY TwiML response — the bot sends
+    NO message at all. This way the owner can chat with the customer
+    from the WhatsApp app without the bot interrupting.
     """
     form_data = await request.form()
 
@@ -906,7 +919,14 @@ async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks):
         )
 
     twiml_response = MessagingResponse()
-    twiml_response.message(reply_text)
+
+    # ── HANDOFF SILENCE: If reply_text is None, bot stays completely quiet ──
+    # An empty <Response></Response> tells Twilio to NOT send any message.
+    # The customer sees nothing from the bot. The human handles it.
+    if reply_text is not None:
+        twiml_response.message(reply_text)
+    else:
+        logger.info(f"🤫 Sending empty TwiML for {sender_number} (handoff silence)")
 
     return PlainTextResponse(str(twiml_response), media_type="application/xml")
 
