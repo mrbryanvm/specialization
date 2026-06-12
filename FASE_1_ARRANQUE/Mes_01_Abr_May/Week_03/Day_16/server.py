@@ -38,7 +38,7 @@ from langchain_chroma import Chroma
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_groq import ChatGroq
-from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from pydantic import BaseModel, Field, SecretStr
 from twilio.rest import Client as TwilioClient
 from twilio.twiml.messaging_response import MessagingResponse
@@ -81,9 +81,9 @@ COLLECTION_NAME = "catalogo_muebleria_america"
 HF_TOKEN = os.getenv("HF_TOKEN", "")
 
 try:
-    embeddings = HuggingFaceInferenceAPIEmbeddings(
-        api_key=SecretStr(HF_TOKEN),
-        model_name=EMBEDDING_MODEL,
+    embeddings = HuggingFaceEndpointEmbeddings(
+        huggingfacehub_api_token=SecretStr(HF_TOKEN),
+        model=EMBEDDING_MODEL,
     )
 
     vectorstore = Chroma(

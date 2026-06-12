@@ -12,7 +12,7 @@ HOW IT WORKS (step by step):
    - Why 500? Small enough that each chunk is about 1 product or 1 FAQ
    - Big enough to keep all the details together (price, dimensions, etc.)
    - The separator "\n\n" ensures we split between products, not mid-sentence
-3. HuggingFaceInferenceAPIEmbeddings converts each chunk into a vector of 384 numbers
+3. HuggingFaceEndpointEmbeddings converts each chunk into a vector of 384 numbers
    - Calls HuggingFace's API (free tier) instead of loading the model locally
    - Same model "all-MiniLM-L6-v2", same quality, but uses ~5MB RAM instead of ~300MB
    - This makes it compatible with free cloud hosting (Render, Railway, etc.)
@@ -31,7 +31,7 @@ import sys
 
 from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
-from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import SecretStr
@@ -107,9 +107,9 @@ def build_vector_database():
         print("   Get your free token at: https://huggingface.co/settings/tokens")
         sys.exit(1)
 
-    embeddings = HuggingFaceInferenceAPIEmbeddings(
-        api_key=SecretStr(HF_TOKEN),
-        model_name=EMBEDDING_MODEL,
+    embeddings = HuggingFaceEndpointEmbeddings(
+        huggingfacehub_api_token=SecretStr(HF_TOKEN),
+        model=EMBEDDING_MODEL,
     )
 
     print("   ✅ Connected to HuggingFace API successfully")
