@@ -2,6 +2,7 @@ fastapi
 uvicorn
 twilio
 python-dotenv
+python-multipart
 langchain
 langchain-groq
 langchain-core
