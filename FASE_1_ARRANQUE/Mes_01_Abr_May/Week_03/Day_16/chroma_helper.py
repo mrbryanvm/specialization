@@ -12,10 +12,11 @@ HOW IT WORKS (step by step):
    - Why 500? Small enough that each chunk is about 1 product or 1 FAQ
    - Big enough to keep all the details together (price, dimensions, etc.)
    - The separator "\n\n" ensures we split between products, not mid-sentence
-3. HuggingFaceEmbeddings converts each chunk into a vector of 384 numbers
-   - Uses the model "all-MiniLM-L6-v2" which runs locally (no API needed)
-   - This model understands meaning: "sofás de cuero" will match
-     "tapizado en cuero sintético" because they're semantically similar
+3. HuggingFaceInferenceAPIEmbeddings converts each chunk into a vector of 384 numbers
+   - Calls HuggingFace's API (free tier) instead of loading the model locally
+   - Same model "all-MiniLM-L6-v2", same quality, but uses ~5MB RAM instead of ~300MB
+   - This makes it compatible with free cloud hosting (Render, Railway, etc.)
+   - Requires a free HuggingFace token (HF_TOKEN) in your .env file
 4. Chroma.from_documents() stores everything in a local folder (chroma_db/)
    - This folder IS the database. No external server needed.
 
@@ -28,10 +29,13 @@ RUN IT AGAIN whenever you update the catalog file.
 import os
 import sys
 
+from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
 from langchain_chroma import Chroma
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+load_dotenv()
 
 # ──────────────────────────────────────────────────────────────
 # CONFIGURATION
@@ -43,9 +47,13 @@ CATALOG_FILE = os.path.join(os.path.dirname(__file__), "catalogo_muebles.txt")
 # Where ChromaDB will store the vector database
 CHROMA_DB_DIR = os.path.join(os.path.dirname(__file__), "chroma_db")
 
-# The embedding model — runs 100% locally, no API key needed
-# all-MiniLM-L6-v2: lightweight (80MB), fast, good quality for Spanish text
+# The embedding model — calls HuggingFace API (free), no local RAM needed
+# Same model as before: all-MiniLM-L6-v2 (384-dimensional vectors)
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+# HuggingFace API token — free, needed to call the Inference API
+# Get yours at: https://huggingface.co/settings/tokens
+HF_TOKEN = os.getenv("HF_TOKEN", "")
 
 # ChromaDB collection name (like a "table" in a regular database)
 COLLECTION_NAME = "catalogo_muebleria_america"
@@ -88,16 +96,22 @@ def build_vector_database():
         preview = chunk.page_content[:120].replace("\n", " ")
         print(f"   [{i+1}] {preview}...")
 
-    # ── Step 3: Initialize the embedding model ──
-    print(f"\n🧠 Step 3: Loading embedding model ({EMBEDDING_MODEL})...")
-    print("   (First time will download ~80MB model. Be patient...)")
+    # ── Step 3: Initialize the embedding model (via HuggingFace API) ──
+    print(f"\n🧠 Step 3: Connecting to HuggingFace Inference API...")
+    print(f"   Model: {EMBEDDING_MODEL}")
+    print("   (No local download needed — computations run on HuggingFace servers)")
 
-    embeddings = HuggingFaceEmbeddings(
+    if not HF_TOKEN:
+        print("   ❌ ERROR: HF_TOKEN not found in .env file!")
+        print("   Get your free token at: https://huggingface.co/settings/tokens")
+        sys.exit(1)
+
+    embeddings = HuggingFaceInferenceAPIEmbeddings(
+        api_key=HF_TOKEN,
         model_name=EMBEDDING_MODEL,
-        model_kwargs={"device": "cpu"},  # Use CPU (no GPU needed)
     )
 
-    print("   ✅ Embedding model loaded successfully")
+    print("   ✅ Connected to HuggingFace API successfully")
 
     # ── Step 4: Create and persist ChromaDB ──
     print(f"\n💾 Step 4: Creating ChromaDB at {CHROMA_DB_DIR}...")

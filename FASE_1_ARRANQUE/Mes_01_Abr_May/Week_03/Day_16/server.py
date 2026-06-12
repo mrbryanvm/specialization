@@ -38,7 +38,7 @@ from langchain_chroma import Chroma
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_groq import ChatGroq
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
 from pydantic import BaseModel, Field
 from twilio.rest import Client as TwilioClient
 from twilio.twiml.messaging_response import MessagingResponse
@@ -67,17 +67,23 @@ app = FastAPI(
 )
 
 # ──────────────────────────────────────────────────────────────
-# 1. LOAD THE VECTOR DATABASE (ChromaDB) — same as Day 15
+# 1. LOAD THE VECTOR DATABASE (ChromaDB)
 # ──────────────────────────────────────────────────────────────
 
 CHROMA_DB_DIR = os.path.join(os.path.dirname(__file__), "chroma_db")
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 COLLECTION_NAME = "catalogo_muebleria_america"
 
+# HF_TOKEN is your HuggingFace API token (free).
+# Instead of loading the 300MB model INTO this server's RAM,
+# we send text to HuggingFace's servers and they return the vector.
+# Same model, same quality, ~5MB RAM instead of ~300MB.
+HF_TOKEN = os.getenv("HF_TOKEN", "")
+
 try:
-    embeddings = HuggingFaceEmbeddings(
+    embeddings = HuggingFaceInferenceAPIEmbeddings(
+        api_key=HF_TOKEN,
         model_name=EMBEDDING_MODEL,
-        model_kwargs={"device": "cpu"},
     )
 
     vectorstore = Chroma(
